@@ -20,7 +20,7 @@ _Filled in as the analysis progresses._
 | 3 | How long does onboarding take, and does speed matter? | | |
 | 4 | Which customer segments convert best? | | |
 | 5 | Why are applications declined? | 47% of decisions are declines. ~76% of declines come from the risk model (income, debt load, history, thin file), ~16% are a process issue (income could not be verified), ~9% hard policy rules. "Income unverified" is 59% of declines in Valencia vs 7–12% elsewhere. Manual review approves at the same rate as automation (52.7% vs 52.6%) but takes ~53 h instead of minutes, and its approved customers activate less (50% vs 61%). | Audit the income-document flow in Valencia. Narrow manual review to cases where it changes the outcome, or speed it up. |
-| 6 | Are newer cohorts better or worse than older ones? | | |
+| 6 | Are newer cohorts better or worse than older ones? | Approval rate fell from ~57% to ~49% exactly when the scoring model changed (v1 → v2, 15 Mar 2025); the applicant mix did not change. But approved customers under v2 activate more (62% vs 55%), so application → active card stays flat at ~26% every month. | v2 gives about the same number of active customers with ~14% fewer cards issued. Keep it, and check its effect on defaults once that data exists. |
 
 ## Q5 — Why are applications declined?
 
@@ -41,6 +41,26 @@ File: [`sql/05_decline_reasons.sql`](sql/05_decline_reasons.sql)
 
 **Recommendation:** fix the income-document flow in Valencia first (cheapest win), then limit manual review to the cases where it actually changes the decision.
 
+## Q6 — Are newer cohorts better or worse?
+
+File: [`sql/06_cohorts.sql`](sql/06_cohorts.sql). A cohort = applications submitted in the same month.
+
+| Cohort | Applications | KYC done | Approved | Cards activated | Application → active card |
+|---|---:|---:|---:|---:|---:|
+| Jan | 3,454 | 85.6% | 56.5% | 54.4% | 26.3% |
+| Feb | 3,073 | 85.3% | 58.4% | 56.7% | 28.2% |
+| Mar | 3,525 | 85.7% | 52.6% | 57.4% | 25.9% |
+| Apr | 3,340 | 84.4% | 49.4% | 62.5% | 26.0% |
+| May | 3,328 | 84.8% | 49.3% | 62.3% | 26.0% |
+| Jun | 3,280 | 84.5% | 49.4% | 62.3% | 26.0% |
+
+- **Approval dropped by ~8 points from March on.** The cause is the new scoring model: on 15 Mar 2025 v1 was replaced by v2. Inside March itself, v1 approves 57.2% and v2 48.9%.
+- **It is not the applicants.** Share of employed, median income, age and acquisition cost are flat across all six months; KYC completion is flat at ~85%.
+- **The stricter model picks more engaged customers.** Cards approved under v2 are activated 62.1% of the time vs 55.1% under v1. The two effects cancel out: application → active card is ~26% in every cohort.
+- **So newer cohorts are not worse — they are cheaper to serve.** The bank gets about the same number of active cards while producing and shipping ~14% fewer cards.
+
+**Limitation:** the dataset has no repayment or default data, so we cannot say whether v2 also reduced credit losses. That is the next thing to measure.
+
 ## Data model
 
 | Table | Grain | Rows | Notes |
@@ -60,6 +80,7 @@ Relationships: `applications.customer_id → customers`, `credit_decisions.appli
 data/                        CSV source files (5 tables)
 sql/00_schema.sql            table definitions + load from CSV
 sql/05_decline_reasons.sql   Q5: decline reasons, process vs risk, manual vs automated
+sql/06_cohorts.sql           Q6: monthly cohorts, scoring model change v1 -> v2
 sql/0X_...                   one file per business question (in progress)
 ```
 
